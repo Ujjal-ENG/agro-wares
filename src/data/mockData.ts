@@ -1,7 +1,7 @@
 import { Vendor, Category, Subcategory, Product } from "@/types/ecommerce";
 
 // Mock Vendors
-export const vendors: Vendor[] = [
+export let vendors: Vendor[] = [
   {
     _id: "v1",
     name: "TechGear Pro",
@@ -32,7 +32,7 @@ export const vendors: Vendor[] = [
 ];
 
 // Mock Categories
-export const categories: Category[] = [
+export let categories: Category[] = [
   {
     _id: "cat1",
     name: "Electronics",
@@ -60,7 +60,7 @@ export const categories: Category[] = [
 ];
 
 // Mock Subcategories with Variant Matrices
-export const subcategories: Subcategory[] = [
+export let subcategories: Subcategory[] = [
   {
     _id: "sub1",
     categoryId: "cat1",
@@ -135,7 +135,7 @@ export const subcategories: Subcategory[] = [
 ];
 
 // Mock Products with Variants
-export const products: Product[] = [
+export let products: Product[] = [
   {
     _id: "p1",
     vendorId: "v1",
@@ -302,3 +302,10 @@ export const products: Product[] = [
     updatedAt: new Date("2024-02-10"),
   },
 ];
+
+// Helper to generate IDs
+export const generateId = () => Math.random().toString(36).substring(2, 9);
+
+// Helper to generate slug
+export const generateSlug = (name: string) =>
+  name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");

@@ -1,4 +1,4 @@
-import { vendors, categories, subcategories, products } from "./mockData";
+import { vendors, categories, subcategories, products, generateId, generateSlug } from "./mockData";
 import type {
   Vendor,
   Category,
@@ -7,6 +7,7 @@ import type {
   ProductCardDTO,
   ProductDetailDTO,
   FacetedSearchResult,
+  VariantMatrix,
 } from "@/types/ecommerce";
 
 // Simulated database operations
@@ -18,11 +19,51 @@ export const getVendorById = (id: string): Vendor | undefined =>
 export const getVendorBySlug = (slug: string): Vendor | undefined => 
   vendors.find((v) => v.slug === slug);
 
+export const getAllVendors = (): Vendor[] => vendors;
+
 // Category operations
 export const getAllCategories = (): Category[] => categories;
 
 export const getCategoryBySlug = (slug: string): Category | undefined => 
   categories.find((c) => c.slug === slug);
+
+export const getCategoryById = (id: string): Category | undefined =>
+  categories.find((c) => c._id === id);
+
+export const createCategory = (data: { name: string; image: string }): Category => {
+  const newCategory: Category = {
+    _id: `cat${generateId()}`,
+    name: data.name,
+    slug: generateSlug(data.name),
+    image: data.image,
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  };
+  categories.push(newCategory);
+  return newCategory;
+};
+
+export const updateCategory = (id: string, data: Partial<Pick<Category, "name" | "image">>): Category | undefined => {
+  const index = categories.findIndex((c) => c._id === id);
+  if (index === -1) return undefined;
+  if (data.name) {
+    categories[index].name = data.name;
+    categories[index].slug = generateSlug(data.name);
+  }
+  if (data.image) categories[index].image = data.image;
+  categories[index].updatedAt = new Date();
+  return categories[index];
+};
+
+export const deleteCategory = (id: string): boolean => {
+  const index = categories.findIndex((c) => c._id === id);
+  if (index === -1) return false;
+  categories.splice(index, 1);
+  // Also delete subcategories and products in this category
+  const subIds = subcategories.filter((s) => s.categoryId === id).map((s) => s._id);
+  subIds.forEach((subId) => deleteSubcategory(subId));
+  return true;
+};
 
 // Subcategory operations
 export const getSubcategoriesByCategoryId = (categoryId: string): Subcategory[] => 
@@ -36,6 +77,51 @@ export const getSubcategoryBySlug = (categorySlug: string, subSlug: string): Sub
 
 export const getSubcategoryById = (id: string): Subcategory | undefined =>
   subcategories.find((s) => s._id === id);
+
+export const getAllSubcategories = (): Subcategory[] => subcategories;
+
+export const createSubcategory = (data: {
+  categoryId: string;
+  name: string;
+  variantMatrix: VariantMatrix;
+}): Subcategory => {
+  const newSubcategory: Subcategory = {
+    _id: `sub${generateId()}`,
+    categoryId: data.categoryId,
+    name: data.name,
+    slug: generateSlug(data.name),
+    variantMatrix: data.variantMatrix,
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  };
+  subcategories.push(newSubcategory);
+  return newSubcategory;
+};
+
+export const updateSubcategory = (
+  id: string,
+  data: Partial<Pick<Subcategory, "name" | "variantMatrix">>
+): Subcategory | undefined => {
+  const index = subcategories.findIndex((s) => s._id === id);
+  if (index === -1) return undefined;
+  if (data.name) {
+    subcategories[index].name = data.name;
+    subcategories[index].slug = generateSlug(data.name);
+  }
+  if (data.variantMatrix) subcategories[index].variantMatrix = data.variantMatrix;
+  subcategories[index].updatedAt = new Date();
+  return subcategories[index];
+};
+
+export const deleteSubcategory = (id: string): boolean => {
+  const index = subcategories.findIndex((s) => s._id === id);
+  if (index === -1) return false;
+  subcategories.splice(index, 1);
+  // Also delete products in this subcategory
+  const toDelete = products.filter((p) => p.subcategoryId === id);
+  toDelete.forEach((p) => deleteProduct(p._id));
+  return true;
+};
 
 // Product operations
 export const getProductBySlug = (slug: string): ProductDetailDTO | undefined => {
@@ -208,4 +294,40 @@ export const getVendorProducts = (
   const start = (page - 1) * limit;
   const paged = vendorProducts.slice(start, start + limit);
   return { products: paged, total };
+};
+
+// Create product
+export const createProduct = (data: Omit<Product, "_id" | "slug" | "createdAt" | "updatedAt">): Product => {
+  const newProduct: Product = {
+    ...data,
+    _id: `p${generateId()}`,
+    slug: generateSlug(data.name),
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  };
+  products.push(newProduct);
+  return newProduct;
+};
+
+// Update product
+export const updateProduct = (id: string, vendorId: string, data: Partial<Product>): Product | undefined => {
+  const index = products.findIndex((p) => p._id === id && p.vendorId === vendorId);
+  if (index === -1) return undefined;
+  
+  const updated = { ...products[index], ...data, updatedAt: new Date() };
+  if (data.name) {
+    updated.slug = generateSlug(data.name);
+  }
+  products[index] = updated;
+  return updated;
+};
+
+// Delete product
+export const deleteProduct = (id: string, vendorId?: string): boolean => {
+  const index = vendorId
+    ? products.findIndex((p) => p._id === id && p.vendorId === vendorId)
+    : products.findIndex((p) => p._id === id);
+  if (index === -1) return false;
+  products.splice(index, 1);
+  return true;
 };

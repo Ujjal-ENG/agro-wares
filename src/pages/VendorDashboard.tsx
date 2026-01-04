@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { Package, Plus, Edit, Trash2, Eye } from "lucide-react";
+import { Package, Plus, Edit, Trash2, Eye, Settings } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -12,13 +12,16 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { getVendorProducts } from "@/data/mockDatabase";
+import { getVendorProducts, deleteProduct } from "@/data/mockDatabase";
 import { vendors } from "@/data/mockData";
+import { useToast } from "@/hooks/use-toast";
 
 export default function VendorDashboard() {
+  const { toast } = useToast();
   // Mock current vendor (first vendor for demo)
   const currentVendor = vendors[0];
   const [page] = useState(1);
+  const [refreshKey, setRefreshKey] = useState(0);
 
   const { products, total } = getVendorProducts(currentVendor._id, page, 10);
 
@@ -35,8 +38,16 @@ export default function VendorDashboard() {
 
   const totalStock = products.reduce((sum, p) => sum + p.totalStock, 0);
 
+  const handleDelete = (productId: string, productName: string) => {
+    if (confirm(`Delete "${productName}"?`)) {
+      deleteProduct(productId, currentVendor._id);
+      toast({ title: "Product deleted" });
+      setRefreshKey((k) => k + 1);
+    }
+  };
+
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background" key={refreshKey}>
       {/* Header */}
       <header className="border-b bg-card">
         <div className="container mx-auto flex items-center justify-between px-4 py-4">
@@ -47,6 +58,12 @@ export default function VendorDashboard() {
             <span className="text-sm text-muted-foreground">
               Logged in as: <strong>{currentVendor.name}</strong>
             </span>
+            <Link to="/admin">
+              <Button variant="outline" size="sm">
+                <Settings className="mr-2 h-4 w-4" />
+                Admin Panel
+              </Button>
+            </Link>
             <Link to="/">
               <Button variant="outline" size="sm">
                 View Store
@@ -64,10 +81,12 @@ export default function VendorDashboard() {
               Manage your products and inventory
             </p>
           </div>
-          <Button>
-            <Plus className="mr-2 h-4 w-4" />
-            Add Product
-          </Button>
+          <Link to="/vendor/add-product">
+            <Button>
+              <Plus className="mr-2 h-4 w-4" />
+              Add Product
+            </Button>
+          </Link>
         </div>
 
         {/* Stats Cards */}
@@ -162,7 +181,11 @@ export default function VendorDashboard() {
                         <Button variant="ghost" size="icon">
                           <Edit className="h-4 w-4" />
                         </Button>
-                        <Button variant="ghost" size="icon">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => handleDelete(product._id, product.name)}
+                        >
                           <Trash2 className="h-4 w-4 text-destructive" />
                         </Button>
                       </div>

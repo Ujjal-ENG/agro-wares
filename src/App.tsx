@@ -7,6 +7,8 @@ import HomePage from "./pages/HomePage";
 import ProductDetailPage from "./pages/ProductDetailPage";
 import CategoryPage from "./pages/CategoryPage";
 import VendorDashboard from "./pages/VendorDashboard";
+import VendorAddProduct from "./pages/VendorAddProduct";
+import AdminPanel from "./pages/AdminPanel";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -23,6 +25,8 @@ const App = () => (
           <Route path="/category/:categorySlug" element={<CategoryPage />} />
           <Route path="/category/:categorySlug/:subcategorySlug" element={<CategoryPage />} />
           <Route path="/vendor" element={<VendorDashboard />} />
+          <Route path="/vendor/add-product" element={<VendorAddProduct />} />
+          <Route path="/admin" element={<AdminPanel />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>
