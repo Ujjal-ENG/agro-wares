@@ -1,13 +1,13 @@
-import { useParams, Link } from "react-router-dom";
-import { ArrowLeft, ShoppingCart, Check, X } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Separator } from "@/components/ui/separator";
 import { VariantPicker } from "@/components/ecommerce/VariantPicker";
-import { useVariantPicker } from "@/hooks/useVariantPicker";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Separator } from "@/components/ui/separator";
+import { useCart } from "@/contexts/CartContext";
 import { getProductBySlug } from "@/data/mockDatabase";
 import { useToast } from "@/hooks/use-toast";
-import { useCart } from "@/contexts/CartContext";
+import { useVariantPicker } from "@/hooks/useVariantPicker";
+import { ArrowLeft, Check, ShoppingCart, X } from "lucide-react";
+import { Link, useParams } from "react-router-dom";
 
 export default function ProductDetailPage() {
   const { slug } = useParams<{ slug: string }>();
@@ -24,7 +24,9 @@ export default function ProductDetailPage() {
   } = useVariantPicker(
     product?.variantMatrix || { axes: [] },
     product?.variants || []
-  );
+    );
+  
+  console.log(selection,selectedVariant,disabledOptions,isComplete)
 
   if (!product) {
     return (

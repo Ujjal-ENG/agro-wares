@@ -1,5 +1,5 @@
-import { useState, useCallback, useMemo } from "react";
-import type { VariantMatrix, ProductVariant, VariantCombo } from "@/types/ecommerce";
+import type { ProductVariant, VariantCombo, VariantMatrix } from "@/types/ecommerce";
+import { useCallback, useMemo, useState } from "react";
 
 interface UseVariantPickerReturn {
   selection: VariantCombo;
@@ -42,7 +42,7 @@ export function useVariantPicker(
   // Calculate disabled options - the key algorithm
   const disabledOptions = useMemo(() => {
     const disabled: Record<string, Set<string>> = {};
-
+    console.log(matrix)
     for (const axis of matrix.axes) {
       disabled[axis.key] = new Set<string>();
 
