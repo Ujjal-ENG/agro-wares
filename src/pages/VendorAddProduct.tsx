@@ -92,21 +92,33 @@ export default function VendorAddProduct() {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!name || !selectedCategoryId || !selectedSubcategoryId || variants.length === 0) {
+    const hasVariantAxes = variantMatrix && variantMatrix.axes.length > 0;
+
+    if (!name || !selectedCategoryId || !selectedSubcategoryId) {
       toast({
         title: "Validation Error",
-        description: "Please fill all required fields and add at least one variant.",
+        description: "Please fill all required fields.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (hasVariantAxes && variants.length === 0) {
+      toast({
+        title: "Validation Error",
+        description: "Please add at least one variant.",
         variant: "destructive",
       });
       return;
     }
 
     // Calculate derived fields
-    const prices = variants.map((v) => v.price);
-    const totalStock = variants.reduce((sum, v) => sum + v.stock, 0);
+    const hasVariants = hasVariantAxes && variants.length > 0;
+    const prices = hasVariants ? variants.map((v) => v.price) : [];
+    const totalStock = hasVariants ? variants.reduce((sum, v) => sum + v.stock, 0) : 0;
     const variantValues: Record<string, string[]> = {};
     
-    if (variantMatrix) {
+    if (hasVariants && variantMatrix) {
       variantMatrix.axes.forEach((axis) => {
         const uniqueValues = [...new Set(variants.map((v) => v.combo[axis.key]))];
         variantValues[axis.key] = uniqueValues;
@@ -125,11 +137,15 @@ export default function VendorAddProduct() {
         keywords: seoKeywords.split(",").map((k) => k.trim()).filter(Boolean),
       },
       defaultImage: defaultImage || "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=400",
-      minPrice: Math.min(...prices),
-      maxPrice: Math.max(...prices),
-      totalStock,
-      inStock: totalStock > 0,
-      variants,
+      hasVariants,
+      basePrice: hasVariants ? undefined : 0,
+      baseStock: hasVariants ? undefined : 0,
+      baseSku: hasVariants ? undefined : "",
+      minPrice: hasVariants ? Math.min(...prices) : 0,
+      maxPrice: hasVariants ? Math.max(...prices) : 0,
+      totalStock: hasVariants ? totalStock : 0,
+      inStock: hasVariants ? totalStock > 0 : false,
+      variants: hasVariants ? variants : [],
       variantValues,
     });
 
