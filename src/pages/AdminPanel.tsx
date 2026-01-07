@@ -447,15 +447,20 @@ export default function AdminPanel() {
                         <Label>Values (comma separated)</Label>
                         <Input
                           value={axis.values.join(", ")}
-                          onChange={(e) =>
-                            updateVariantAxis(
-                              idx,
-                              "values",
-                              e.target.value.split(",").map((v) => v.trim()).filter(Boolean)
-                            )
-                          }
+                          onChange={(e) => {
+                            const inputValue = e.target.value;
+                            // Split by comma and preserve all values (including empty for typing)
+                            const values = inputValue
+                              .split(",")
+                              .map((v) => v.trim())
+                              .filter((v) => v.length > 0);
+                            updateVariantAxis(idx, "values", values);
+                          }}
                           placeholder="e.g., S, M, L, XL"
                         />
+                        <p className="text-xs text-muted-foreground">
+                          Enter values separated by commas: Red, Blue, Green
+                        </p>
                       </div>
                     </div>
                   ))}

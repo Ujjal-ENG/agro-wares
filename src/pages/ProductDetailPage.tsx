@@ -7,10 +7,12 @@ import { VariantPicker } from "@/components/ecommerce/VariantPicker";
 import { useVariantPicker } from "@/hooks/useVariantPicker";
 import { getProductBySlug } from "@/data/mockDatabase";
 import { useToast } from "@/hooks/use-toast";
+import { useCart } from "@/contexts/CartContext";
 
 export default function ProductDetailPage() {
   const { slug } = useParams<{ slug: string }>();
   const { toast } = useToast();
+  const { addToCart } = useCart();
   const product = slug ? getProductBySlug(slug) : undefined;
 
   const {
@@ -45,6 +47,13 @@ export default function ProductDetailPage() {
 
   const handleAddToCart = () => {
     if (!selectedVariant) return;
+    addToCart({
+      productId: product._id,
+      productName: product.name,
+      productImage: product.defaultImage,
+      variant: selectedVariant,
+      selection: { ...selection },
+    });
     toast({
       title: "Added to Cart",
       description: `${product.name} (${Object.values(selection).join(", ")}) - ${formatPrice(selectedVariant.price)}`,

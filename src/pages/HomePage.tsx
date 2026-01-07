@@ -1,15 +1,18 @@
 import { Link } from "react-router-dom";
-import { Search } from "lucide-react";
+import { Search, ShoppingCart } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { CategoryCard } from "@/components/ecommerce/CategoryCard";
 import { ProductCard } from "@/components/ecommerce/ProductCard";
 import { getAllCategories, searchProducts } from "@/data/mockDatabase";
+import { useCart } from "@/contexts/CartContext";
 import { useState } from "react";
 
 export default function HomePage() {
   const categories = getAllCategories();
   const featuredProducts = searchProducts("", 1, 4).products;
+  const { totalItems } = useCart();
   const [searchQuery, setSearchQuery] = useState("");
 
   return (
@@ -38,6 +41,14 @@ export default function HomePage() {
             </div>
           </div>
           <nav className="flex items-center gap-4">
+            <Link to="/cart" className="relative">
+              <ShoppingCart className="h-6 w-6" />
+              {totalItems > 0 && (
+                <Badge className="absolute -right-2 -top-2 h-5 w-5 rounded-full p-0 text-xs flex items-center justify-center">
+                  {totalItems}
+                </Badge>
+              )}
+            </Link>
             <Link to="/vendor" className="text-sm hover:text-primary">
               Vendor Dashboard
             </Link>
