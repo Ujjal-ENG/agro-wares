@@ -134,8 +134,9 @@ export let subcategories: Subcategory[] = [
   },
 ];
 
-// Mock Products with Variants
+// Mock Products with Variants and Flash Sales
 export let products: Product[] = [
+  // Product WITH variants and flash sale
   {
     _id: "p1",
     vendorId: "v1",
@@ -150,6 +151,7 @@ export let products: Product[] = [
       keywords: ["smartphone", "galaxy", "android"],
     },
     defaultImage: "https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?w=400",
+    hasVariants: true,
     minPrice: 799,
     maxPrice: 1199,
     totalStock: 150,
@@ -167,9 +169,19 @@ export let products: Product[] = [
       storage: ["64GB", "128GB", "256GB", "512GB"],
       color: ["Black", "White", "Blue", "Gold"],
     },
+    flashSale: {
+      isActive: true,
+      discountType: "percentage",
+      discountValue: 15,
+      startDate: new Date("2024-01-01"),
+      endDate: new Date("2027-12-31"),
+      stockLimit: 50,
+      soldCount: 10,
+    },
     createdAt: new Date("2024-06-01"),
     updatedAt: new Date("2024-06-01"),
   },
+  // Product WITH variants, no flash sale
   {
     _id: "p2",
     vendorId: "v1",
@@ -184,6 +196,7 @@ export let products: Product[] = [
       keywords: ["laptop", "professional", "ultrabook"],
     },
     defaultImage: "https://images.unsplash.com/photo-1496181133206-80ce9b88a853?w=400",
+    hasVariants: true,
     minPrice: 1299,
     maxPrice: 2199,
     totalStock: 80,
@@ -201,6 +214,7 @@ export let products: Product[] = [
     createdAt: new Date("2024-05-15"),
     updatedAt: new Date("2024-05-15"),
   },
+  // Product WITH variants
   {
     _id: "p3",
     vendorId: "v2",
@@ -215,6 +229,7 @@ export let products: Product[] = [
       keywords: ["t-shirt", "cotton", "casual"],
     },
     defaultImage: "https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=400",
+    hasVariants: true,
     minPrice: 24.99,
     maxPrice: 29.99,
     totalStock: 500,
@@ -236,6 +251,7 @@ export let products: Product[] = [
     createdAt: new Date("2024-04-01"),
     updatedAt: new Date("2024-04-01"),
   },
+  // Product WITH variants
   {
     _id: "p4",
     vendorId: "v2",
@@ -250,6 +266,7 @@ export let products: Product[] = [
       keywords: ["jeans", "denim", "slim fit"],
     },
     defaultImage: "https://images.unsplash.com/photo-1542272604-787c3835535d?w=400",
+    hasVariants: true,
     minPrice: 79.99,
     maxPrice: 89.99,
     totalStock: 200,
@@ -269,6 +286,7 @@ export let products: Product[] = [
     createdAt: new Date("2024-03-20"),
     updatedAt: new Date("2024-03-20"),
   },
+  // Product WITH variants
   {
     _id: "p5",
     vendorId: "v3",
@@ -283,6 +301,7 @@ export let products: Product[] = [
       keywords: ["furniture", "coffee table", "modern"],
     },
     defaultImage: "https://images.unsplash.com/photo-1533090481720-856c6e3c1fdc?w=400",
+    hasVariants: true,
     minPrice: 299,
     maxPrice: 499,
     totalStock: 45,
@@ -300,6 +319,71 @@ export let products: Product[] = [
     },
     createdAt: new Date("2024-02-10"),
     updatedAt: new Date("2024-02-10"),
+  },
+  // Product WITHOUT variants (simple product) with flash sale
+  {
+    _id: "p6",
+    vendorId: "v1",
+    categoryId: "cat1",
+    subcategoryId: "sub2",
+    name: "USB-C Hub Adapter",
+    slug: "usb-c-hub-adapter",
+    description: "7-in-1 USB-C hub with HDMI, USB 3.0 ports, SD card reader, and power delivery.",
+    seo: {
+      title: "USB-C Hub Adapter - 7-in-1",
+      description: "Multi-port USB-C adapter for laptops",
+      keywords: ["usb-c", "hub", "adapter", "laptop accessory"],
+    },
+    defaultImage: "https://images.unsplash.com/photo-1625723044792-44de16ccb4e8?w=400",
+    hasVariants: false,
+    basePrice: 49.99,
+    baseStock: 200,
+    baseSku: "USBC-HUB-7IN1",
+    minPrice: 49.99,
+    maxPrice: 49.99,
+    totalStock: 200,
+    inStock: true,
+    variants: [],
+    variantValues: {},
+    flashSale: {
+      isActive: true,
+      discountType: "fixed",
+      discountValue: 15,
+      startDate: new Date("2024-01-01"),
+      endDate: new Date("2027-12-31"),
+      stockLimit: 50,
+      soldCount: 12,
+    },
+    createdAt: new Date("2024-07-01"),
+    updatedAt: new Date("2024-07-01"),
+  },
+  // Product WITHOUT variants (simple product) no flash sale
+  {
+    _id: "p7",
+    vendorId: "v3",
+    categoryId: "cat3",
+    subcategoryId: "sub5",
+    name: "Minimalist Desk Lamp",
+    slug: "minimalist-desk-lamp",
+    description: "Modern LED desk lamp with adjustable brightness and color temperature. Touch control.",
+    seo: {
+      title: "Minimalist LED Desk Lamp",
+      description: "Modern adjustable LED desk lamp",
+      keywords: ["lamp", "desk lamp", "LED", "modern"],
+    },
+    defaultImage: "https://images.unsplash.com/photo-1507473885765-e6ed057f782c?w=400",
+    hasVariants: false,
+    basePrice: 79.99,
+    baseStock: 75,
+    baseSku: "DESK-LAMP-LED",
+    minPrice: 79.99,
+    maxPrice: 79.99,
+    totalStock: 75,
+    inStock: true,
+    variants: [],
+    variantValues: {},
+    createdAt: new Date("2024-06-15"),
+    updatedAt: new Date("2024-06-15"),
   },
 ];
 

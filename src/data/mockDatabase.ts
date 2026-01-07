@@ -10,25 +10,15 @@ import type {
   VariantMatrix,
 } from "@/types/ecommerce";
 
-// Simulated database operations
-
 // Vendor operations
-export const getVendorById = (id: string): Vendor | undefined => 
-  vendors.find((v) => v._id === id);
-
-export const getVendorBySlug = (slug: string): Vendor | undefined => 
-  vendors.find((v) => v.slug === slug);
-
+export const getVendorById = (id: string): Vendor | undefined => vendors.find((v) => v._id === id);
+export const getVendorBySlug = (slug: string): Vendor | undefined => vendors.find((v) => v.slug === slug);
 export const getAllVendors = (): Vendor[] => vendors;
 
 // Category operations
 export const getAllCategories = (): Category[] => categories;
-
-export const getCategoryBySlug = (slug: string): Category | undefined => 
-  categories.find((c) => c.slug === slug);
-
-export const getCategoryById = (id: string): Category | undefined =>
-  categories.find((c) => c._id === id);
+export const getCategoryBySlug = (slug: string): Category | undefined => categories.find((c) => c.slug === slug);
+export const getCategoryById = (id: string): Category | undefined => categories.find((c) => c._id === id);
 
 export const createCategory = (data: { name: string; image: string }): Category => {
   const newCategory: Category = {
@@ -59,32 +49,20 @@ export const deleteCategory = (id: string): boolean => {
   const index = categories.findIndex((c) => c._id === id);
   if (index === -1) return false;
   categories.splice(index, 1);
-  // Also delete subcategories and products in this category
-  const subIds = subcategories.filter((s) => s.categoryId === id).map((s) => s._id);
-  subIds.forEach((subId) => deleteSubcategory(subId));
   return true;
 };
 
 // Subcategory operations
-export const getSubcategoriesByCategoryId = (categoryId: string): Subcategory[] => 
-  subcategories.filter((s) => s.categoryId === categoryId);
-
+export const getSubcategoriesByCategoryId = (categoryId: string): Subcategory[] => subcategories.filter((s) => s.categoryId === categoryId);
 export const getSubcategoryBySlug = (categorySlug: string, subSlug: string): Subcategory | undefined => {
   const category = getCategoryBySlug(categorySlug);
   if (!category) return undefined;
   return subcategories.find((s) => s.categoryId === category._id && s.slug === subSlug);
 };
-
-export const getSubcategoryById = (id: string): Subcategory | undefined =>
-  subcategories.find((s) => s._id === id);
-
+export const getSubcategoryById = (id: string): Subcategory | undefined => subcategories.find((s) => s._id === id);
 export const getAllSubcategories = (): Subcategory[] => subcategories;
 
-export const createSubcategory = (data: {
-  categoryId: string;
-  name: string;
-  variantMatrix: VariantMatrix;
-}): Subcategory => {
+export const createSubcategory = (data: { categoryId: string; name: string; variantMatrix: VariantMatrix }): Subcategory => {
   const newSubcategory: Subcategory = {
     _id: `sub${generateId()}`,
     categoryId: data.categoryId,
@@ -98,10 +76,7 @@ export const createSubcategory = (data: {
   return newSubcategory;
 };
 
-export const updateSubcategory = (
-  id: string,
-  data: Partial<Pick<Subcategory, "name" | "variantMatrix">>
-): Subcategory | undefined => {
+export const updateSubcategory = (id: string, data: Partial<Pick<Subcategory, "name" | "variantMatrix">>): Subcategory | undefined => {
   const index = subcategories.findIndex((s) => s._id === id);
   if (index === -1) return undefined;
   if (data.name) {
@@ -117,29 +92,46 @@ export const deleteSubcategory = (id: string): boolean => {
   const index = subcategories.findIndex((s) => s._id === id);
   if (index === -1) return false;
   subcategories.splice(index, 1);
-  // Also delete products in this subcategory
-  const toDelete = products.filter((p) => p.subcategoryId === id);
-  toDelete.forEach((p) => deleteProduct(p._id));
   return true;
 };
 
 // Product operations
+const toProductCardDTO = (p: Product): ProductCardDTO => {
+  const vendor = getVendorById(p.vendorId);
+  return {
+    _id: p._id,
+    name: p.name,
+    slug: p.slug,
+    vendorName: vendor?.name || "Unknown",
+    minPrice: p.hasVariants ? p.minPrice : (p.basePrice || 0),
+    maxPrice: p.hasVariants ? p.maxPrice : (p.basePrice || 0),
+    defaultImage: p.defaultImage,
+    inStock: p.inStock,
+    hasVariants: p.hasVariants,
+    basePrice: p.basePrice,
+    flashSale: p.flashSale,
+  };
+};
+
 export const getProductBySlug = (slug: string): ProductDetailDTO | undefined => {
   const product = products.find((p) => p.slug === slug);
   if (!product) return undefined;
-
   const vendor = getVendorById(product.vendorId);
   const subcategory = getSubcategoryById(product.subcategoryId);
-
   return {
     _id: product._id,
     name: product.name,
     slug: product.slug,
     vendorName: vendor?.name || "Unknown Vendor",
-    minPrice: product.minPrice,
-    maxPrice: product.maxPrice,
+    minPrice: product.hasVariants ? product.minPrice : (product.basePrice || 0),
+    maxPrice: product.hasVariants ? product.maxPrice : (product.basePrice || 0),
     defaultImage: product.defaultImage,
     inStock: product.inStock,
+    hasVariants: product.hasVariants,
+    basePrice: product.basePrice,
+    baseStock: product.baseStock,
+    baseSku: product.baseSku,
+    flashSale: product.flashSale,
     description: product.description,
     variantMatrix: subcategory?.variantMatrix || { axes: [] },
     variants: product.variants,
@@ -156,31 +148,18 @@ export const getProductsByCategory = (
 ): FacetedSearchResult => {
   const category = getCategoryBySlug(categorySlug);
   if (!category) return { filters: [], products: [], total: 0 };
-
   let filtered = products.filter((p) => p.categoryId === category._id);
-
-  // Filter by subcategory
   if (subcategorySlug) {
     const subcategory = getSubcategoryBySlug(categorySlug, subcategorySlug);
-    if (subcategory) {
-      filtered = filtered.filter((p) => p.subcategoryId === subcategory._id);
-    }
+    if (subcategory) filtered = filtered.filter((p) => p.subcategoryId === subcategory._id);
   }
-
-  // Apply variant filters
   if (filters) {
     Object.entries(filters).forEach(([key, values]) => {
       if (values.length > 0) {
-        filtered = filtered.filter((p) =>
-          p.variants.some(
-            (v) => values.includes(v.combo[key]) && v.stock > 0
-          )
-        );
+        filtered = filtered.filter((p) => p.variants.some((v) => values.includes(v.combo[key]) && v.stock > 0));
       }
     });
   }
-
-  // Build facets from filtered results
   const facetMap: Record<string, Record<string, number>> = {};
   filtered.forEach((p) => {
     p.variants.forEach((v) => {
@@ -190,62 +169,24 @@ export const getProductsByCategory = (
       });
     });
   });
-
-  const facets = Object.entries(facetMap).map(([k, counts]) => ({
-    k,
-    v: Object.keys(counts),
-    counts,
-  }));
-
-  // Sort
+  const facets = Object.entries(facetMap).map(([k, counts]) => ({ k, v: Object.keys(counts), counts }));
   switch (sortBy) {
-    case "price-asc":
-      filtered.sort((a, b) => a.minPrice - b.minPrice);
-      break;
-    case "price-desc":
-      filtered.sort((a, b) => b.minPrice - a.minPrice);
-      break;
-    case "newest":
-      filtered.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
-      break;
+    case "price-asc": filtered.sort((a, b) => a.minPrice - b.minPrice); break;
+    case "price-desc": filtered.sort((a, b) => b.minPrice - a.minPrice); break;
+    case "newest": filtered.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime()); break;
   }
-
   const total = filtered.length;
-  const start = (page - 1) * limit;
-  const paged = filtered.slice(start, start + limit);
-
-  const productCards: ProductCardDTO[] = paged.map((p) => {
-    const vendor = getVendorById(p.vendorId);
-    return {
-      _id: p._id,
-      name: p.name,
-      slug: p.slug,
-      vendorName: vendor?.name || "Unknown",
-      minPrice: p.minPrice,
-      maxPrice: p.maxPrice,
-      defaultImage: p.defaultImage,
-      inStock: p.inStock,
-    };
-  });
-
-  return { filters: facets, products: productCards, total };
+  const paged = filtered.slice((page - 1) * limit, page * limit);
+  return { filters: facets, products: paged.map(toProductCardDTO), total };
 };
 
-// Search
-export const searchProducts = (
-  query: string,
-  page: number = 1,
-  limit: number = 12
-): FacetedSearchResult => {
+export const searchProducts = (query: string, page: number = 1, limit: number = 12): FacetedSearchResult => {
   const lowerQuery = query.toLowerCase();
-  
-  const filtered = products.filter(
-    (p) =>
-      p.name.toLowerCase().includes(lowerQuery) ||
-      p.description.toLowerCase().includes(lowerQuery) ||
-      p.variants.some((v) => v.sku.toLowerCase().includes(lowerQuery))
+  const filtered = products.filter((p) =>
+    p.name.toLowerCase().includes(lowerQuery) ||
+    p.description.toLowerCase().includes(lowerQuery) ||
+    p.variants.some((v) => v.sku.toLowerCase().includes(lowerQuery))
   );
-
   const facetMap: Record<string, Record<string, number>> = {};
   filtered.forEach((p) => {
     p.variants.forEach((v) => {
@@ -255,78 +196,34 @@ export const searchProducts = (
       });
     });
   });
-
-  const facets = Object.entries(facetMap).map(([k, counts]) => ({
-    k,
-    v: Object.keys(counts),
-    counts,
-  }));
-
+  const facets = Object.entries(facetMap).map(([k, counts]) => ({ k, v: Object.keys(counts), counts }));
   const total = filtered.length;
-  const start = (page - 1) * limit;
-  const paged = filtered.slice(start, start + limit);
-
-  const productCards: ProductCardDTO[] = paged.map((p) => {
-    const vendor = getVendorById(p.vendorId);
-    return {
-      _id: p._id,
-      name: p.name,
-      slug: p.slug,
-      vendorName: vendor?.name || "Unknown",
-      minPrice: p.minPrice,
-      maxPrice: p.maxPrice,
-      defaultImage: p.defaultImage,
-      inStock: p.inStock,
-    };
-  });
-
-  return { filters: facets, products: productCards, total };
+  const paged = filtered.slice((page - 1) * limit, page * limit);
+  return { filters: facets, products: paged.map(toProductCardDTO), total };
 };
 
-// Vendor dashboard
-export const getVendorProducts = (
-  vendorId: string,
-  page: number = 1,
-  limit: number = 10
-): { products: Product[]; total: number } => {
+export const getVendorProducts = (vendorId: string, page: number = 1, limit: number = 10): { products: Product[]; total: number } => {
   const vendorProducts = products.filter((p) => p.vendorId === vendorId);
-  const total = vendorProducts.length;
-  const start = (page - 1) * limit;
-  const paged = vendorProducts.slice(start, start + limit);
-  return { products: paged, total };
+  return { products: vendorProducts.slice((page - 1) * limit, page * limit), total: vendorProducts.length };
 };
 
-// Create product
 export const createProduct = (data: Omit<Product, "_id" | "slug" | "createdAt" | "updatedAt">): Product => {
-  const newProduct: Product = {
-    ...data,
-    _id: `p${generateId()}`,
-    slug: generateSlug(data.name),
-    createdAt: new Date(),
-    updatedAt: new Date(),
-  };
+  const newProduct: Product = { ...data, _id: `p${generateId()}`, slug: generateSlug(data.name), createdAt: new Date(), updatedAt: new Date() };
   products.push(newProduct);
   return newProduct;
 };
 
-// Update product
 export const updateProduct = (id: string, vendorId: string, data: Partial<Product>): Product | undefined => {
   const index = products.findIndex((p) => p._id === id && p.vendorId === vendorId);
   if (index === -1) return undefined;
-  
   const updated = { ...products[index], ...data, updatedAt: new Date() };
-  if (data.name) {
-    updated.slug = generateSlug(data.name);
-  }
+  if (data.name) updated.slug = generateSlug(data.name);
   products[index] = updated;
   return updated;
 };
 
-// Delete product
 export const deleteProduct = (id: string, vendorId?: string): boolean => {
-  const index = vendorId
-    ? products.findIndex((p) => p._id === id && p.vendorId === vendorId)
-    : products.findIndex((p) => p._id === id);
+  const index = vendorId ? products.findIndex((p) => p._id === id && p.vendorId === vendorId) : products.findIndex((p) => p._id === id);
   if (index === -1) return false;
   products.splice(index, 1);
   return true;
