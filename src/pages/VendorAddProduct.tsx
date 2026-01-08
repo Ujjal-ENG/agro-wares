@@ -1,11 +1,12 @@
 import { useState, useMemo } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { ArrowLeft, Plus, Trash2, Save } from "lucide-react";
+import { ArrowLeft, Plus, Trash2, Save, Zap } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Switch } from "@/components/ui/switch";
 import {
   Select,
   SelectContent,
@@ -21,7 +22,7 @@ import {
   createProduct,
 } from "@/data/mockDatabase";
 import { vendors } from "@/data/mockData";
-import type { ProductVariant } from "@/types/ecommerce";
+import type { ProductVariant, FlashSale } from "@/types/ecommerce";
 
 export default function VendorAddProduct() {
   const navigate = useNavigate();
@@ -43,6 +44,7 @@ export default function VendorAddProduct() {
   );
 
   const variantMatrix = selectedSubcategory?.variantMatrix;
+  const hasVariantAxes = variantMatrix && variantMatrix.axes.length > 0;
 
   // Form state
   const [name, setName] = useState("");
@@ -52,8 +54,21 @@ export default function VendorAddProduct() {
   const [seoDescription, setSeoDescription] = useState("");
   const [seoKeywords, setSeoKeywords] = useState("");
 
+  // Simple product state (no variants)
+  const [basePrice, setBasePrice] = useState<number>(0);
+  const [baseStock, setBaseStock] = useState<number>(0);
+  const [baseSku, setBaseSku] = useState("");
+
   // Variants state
   const [variants, setVariants] = useState<ProductVariant[]>([]);
+
+  // Flash Sale state
+  const [flashSaleEnabled, setFlashSaleEnabled] = useState(false);
+  const [flashSaleDiscountType, setFlashSaleDiscountType] = useState<"percentage" | "fixed">("percentage");
+  const [flashSaleDiscountValue, setFlashSaleDiscountValue] = useState<number>(0);
+  const [flashSaleStartDate, setFlashSaleStartDate] = useState("");
+  const [flashSaleEndDate, setFlashSaleEndDate] = useState("");
+  const [flashSaleStockLimit, setFlashSaleStockLimit] = useState<number | undefined>(undefined);
 
   const addVariant = () => {
     if (!variantMatrix) return;
@@ -92,8 +107,6 @@ export default function VendorAddProduct() {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
-    const hasVariantAxes = variantMatrix && variantMatrix.axes.length > 0;
-
     if (!name || !selectedCategoryId || !selectedSubcategoryId) {
       toast({
         title: "Validation Error",
@@ -102,6 +115,8 @@ export default function VendorAddProduct() {
       });
       return;
     }
+
+    const hasVariants = hasVariantAxes && variants.length > 0;
 
     if (hasVariantAxes && variants.length === 0) {
       toast({
@@ -112,10 +127,18 @@ export default function VendorAddProduct() {
       return;
     }
 
+    if (!hasVariantAxes && basePrice <= 0) {
+      toast({
+        title: "Validation Error",
+        description: "Please set a valid price for the product.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     // Calculate derived fields
-    const hasVariants = hasVariantAxes && variants.length > 0;
-    const prices = hasVariants ? variants.map((v) => v.price) : [];
-    const totalStock = hasVariants ? variants.reduce((sum, v) => sum + v.stock, 0) : 0;
+    const prices = hasVariants ? variants.map((v) => v.price) : [basePrice];
+    const totalStock = hasVariants ? variants.reduce((sum, v) => sum + v.stock, 0) : baseStock;
     const variantValues: Record<string, string[]> = {};
     
     if (hasVariants && variantMatrix) {
@@ -123,6 +146,20 @@ export default function VendorAddProduct() {
         const uniqueValues = [...new Set(variants.map((v) => v.combo[axis.key]))];
         variantValues[axis.key] = uniqueValues;
       });
+    }
+
+    // Build flash sale object if enabled
+    let flashSale: FlashSale | undefined;
+    if (flashSaleEnabled && flashSaleStartDate && flashSaleEndDate && flashSaleDiscountValue > 0) {
+      flashSale = {
+        isActive: true,
+        discountType: flashSaleDiscountType,
+        discountValue: flashSaleDiscountValue,
+        startDate: new Date(flashSaleStartDate),
+        endDate: new Date(flashSaleEndDate),
+        stockLimit: flashSaleStockLimit,
+        soldCount: 0,
+      };
     }
 
     createProduct({
@@ -138,15 +175,16 @@ export default function VendorAddProduct() {
       },
       defaultImage: defaultImage || "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=400",
       hasVariants,
-      basePrice: hasVariants ? undefined : 0,
-      baseStock: hasVariants ? undefined : 0,
-      baseSku: hasVariants ? undefined : "",
-      minPrice: hasVariants ? Math.min(...prices) : 0,
-      maxPrice: hasVariants ? Math.max(...prices) : 0,
-      totalStock: hasVariants ? totalStock : 0,
-      inStock: hasVariants ? totalStock > 0 : false,
+      basePrice: hasVariants ? undefined : basePrice,
+      baseStock: hasVariants ? undefined : baseStock,
+      baseSku: hasVariants ? undefined : baseSku,
+      minPrice: Math.min(...prices),
+      maxPrice: Math.max(...prices),
+      totalStock,
+      inStock: totalStock > 0,
       variants: hasVariants ? variants : [],
       variantValues,
+      flashSale,
     });
 
     toast({
@@ -262,110 +300,236 @@ export default function VendorAddProduct() {
               </CardContent>
             </Card>
 
+            {/* Simple Product Pricing (no variants) */}
+            {selectedSubcategoryId && !hasVariantAxes && (
+              <Card>
+                <CardHeader>
+                  <CardTitle>Pricing & Inventory</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid gap-4 sm:grid-cols-3">
+                    <div className="space-y-2">
+                      <Label>SKU</Label>
+                      <Input
+                        value={baseSku}
+                        onChange={(e) => setBaseSku(e.target.value)}
+                        placeholder="PROD-001"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Price ($) *</Label>
+                      <Input
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        value={basePrice}
+                        onChange={(e) => setBasePrice(Number(e.target.value))}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Stock *</Label>
+                      <Input
+                        type="number"
+                        min="0"
+                        value={baseStock}
+                        onChange={(e) => setBaseStock(Number(e.target.value))}
+                      />
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
             {/* Variants */}
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between">
-                <CardTitle>Variants</CardTitle>
-                {variantMatrix && (
+            {hasVariantAxes && (
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between">
+                  <CardTitle>Variants</CardTitle>
                   <Button type="button" size="sm" onClick={addVariant}>
                     <Plus className="mr-2 h-4 w-4" />
                     Add Variant
                   </Button>
-                )}
-              </CardHeader>
-              <CardContent>
-                {!variantMatrix ? (
-                  <p className="text-center text-muted-foreground py-8">
-                    Select a subcategory to configure variants
-                  </p>
-                ) : variants.length === 0 ? (
-                  <p className="text-center text-muted-foreground py-8">
-                    No variants added. Click "Add Variant" to create one.
-                  </p>
-                ) : (
-                  <div className="space-y-4">
-                    {variants.map((variant, idx) => (
-                      <div
-                        key={idx}
-                        className="rounded-lg border p-4 space-y-4"
-                      >
-                        <div className="flex items-center justify-between">
-                          <span className="font-medium">Variant {idx + 1}</span>
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => removeVariant(idx)}
-                          >
-                            <Trash2 className="h-4 w-4 text-destructive" />
-                          </Button>
-                        </div>
+                </CardHeader>
+                <CardContent>
+                  {variants.length === 0 ? (
+                    <p className="text-center text-muted-foreground py-8">
+                      No variants added. Click "Add Variant" to create one.
+                    </p>
+                  ) : (
+                    <div className="space-y-4">
+                      {variants.map((variant, idx) => (
+                        <div
+                          key={idx}
+                          className="rounded-lg border p-4 space-y-4"
+                        >
+                          <div className="flex items-center justify-between">
+                            <span className="font-medium">Variant {idx + 1}</span>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => removeVariant(idx)}
+                            >
+                              <Trash2 className="h-4 w-4 text-destructive" />
+                            </Button>
+                          </div>
 
-                        {/* Dynamic variant options */}
-                        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                          {variantMatrix.axes.map((axis) => (
-                            <div key={axis.key} className="space-y-2">
-                              <Label>{axis.label}</Label>
-                              <Select
-                                value={variant.combo[axis.key]}
-                                onValueChange={(val) =>
-                                  updateVariantCombo(idx, axis.key, val)
+                          {/* Dynamic variant options */}
+                          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                            {variantMatrix!.axes.map((axis) => (
+                              <div key={axis.key} className="space-y-2">
+                                <Label>{axis.label}</Label>
+                                <Select
+                                  value={variant.combo[axis.key]}
+                                  onValueChange={(val) =>
+                                    updateVariantCombo(idx, axis.key, val)
+                                  }
+                                >
+                                  <SelectTrigger>
+                                    <SelectValue />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    {axis.values.map((val) => (
+                                      <SelectItem key={val} value={val}>
+                                        {val}
+                                      </SelectItem>
+                                    ))}
+                                  </SelectContent>
+                                </Select>
+                              </div>
+                            ))}
+                          </div>
+
+                          {/* SKU, Price, Stock */}
+                          <div className="grid gap-4 sm:grid-cols-3">
+                            <div className="space-y-2">
+                              <Label>SKU</Label>
+                              <Input
+                                value={variant.sku}
+                                onChange={(e) =>
+                                  updateVariant(idx, "sku", e.target.value)
                                 }
-                              >
-                                <SelectTrigger>
-                                  <SelectValue />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  {axis.values.map((val) => (
-                                    <SelectItem key={val} value={val}>
-                                      {val}
-                                    </SelectItem>
-                                  ))}
-                                </SelectContent>
-                              </Select>
+                                placeholder="SKU-001"
+                              />
                             </div>
-                          ))}
+                            <div className="space-y-2">
+                              <Label>Price ($)</Label>
+                              <Input
+                                type="number"
+                                min="0"
+                                step="0.01"
+                                value={variant.price}
+                                onChange={(e) =>
+                                  updateVariant(idx, "price", e.target.value)
+                                }
+                              />
+                            </div>
+                            <div className="space-y-2">
+                              <Label>Stock</Label>
+                              <Input
+                                type="number"
+                                min="0"
+                                value={variant.stock}
+                                onChange={(e) =>
+                                  updateVariant(idx, "stock", e.target.value)
+                                }
+                              />
+                            </div>
+                          </div>
                         </div>
+                      ))}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            )}
 
-                        {/* SKU, Price, Stock */}
-                        <div className="grid gap-4 sm:grid-cols-3">
-                          <div className="space-y-2">
-                            <Label>SKU</Label>
-                            <Input
-                              value={variant.sku}
-                              onChange={(e) =>
-                                updateVariant(idx, "sku", e.target.value)
-                              }
-                              placeholder="SKU-001"
-                            />
-                          </div>
-                          <div className="space-y-2">
-                            <Label>Price ($)</Label>
-                            <Input
-                              type="number"
-                              min="0"
-                              step="0.01"
-                              value={variant.price}
-                              onChange={(e) =>
-                                updateVariant(idx, "price", e.target.value)
-                              }
-                            />
-                          </div>
-                          <div className="space-y-2">
-                            <Label>Stock</Label>
-                            <Input
-                              type="number"
-                              min="0"
-                              value={variant.stock}
-                              onChange={(e) =>
-                                updateVariant(idx, "stock", e.target.value)
-                              }
-                            />
-                          </div>
-                        </div>
-                      </div>
-                    ))}
+            {/* Flash Sale */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Zap className="h-5 w-5 text-yellow-500" />
+                  Flash Sale
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <Label>Enable Flash Sale</Label>
+                    <p className="text-sm text-muted-foreground">
+                      Set a time-limited discount for this product
+                    </p>
                   </div>
+                  <Switch
+                    checked={flashSaleEnabled}
+                    onCheckedChange={setFlashSaleEnabled}
+                  />
+                </div>
+
+                {flashSaleEnabled && (
+                  <>
+                    <div className="grid gap-4 sm:grid-cols-2">
+                      <div className="space-y-2">
+                        <Label>Discount Type</Label>
+                        <Select
+                          value={flashSaleDiscountType}
+                          onValueChange={(val) => setFlashSaleDiscountType(val as "percentage" | "fixed")}
+                        >
+                          <SelectTrigger>
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="percentage">Percentage (%)</SelectItem>
+                            <SelectItem value="fixed">Fixed Amount ($)</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Discount Value</Label>
+                        <Input
+                          type="number"
+                          min="0"
+                          step={flashSaleDiscountType === "percentage" ? "1" : "0.01"}
+                          value={flashSaleDiscountValue}
+                          onChange={(e) => setFlashSaleDiscountValue(Number(e.target.value))}
+                          placeholder={flashSaleDiscountType === "percentage" ? "e.g., 20" : "e.g., 10.00"}
+                        />
+                      </div>
+                    </div>
+
+                    <div className="grid gap-4 sm:grid-cols-2">
+                      <div className="space-y-2">
+                        <Label>Start Date & Time</Label>
+                        <Input
+                          type="datetime-local"
+                          value={flashSaleStartDate}
+                          onChange={(e) => setFlashSaleStartDate(e.target.value)}
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label>End Date & Time</Label>
+                        <Input
+                          type="datetime-local"
+                          value={flashSaleEndDate}
+                          onChange={(e) => setFlashSaleEndDate(e.target.value)}
+                        />
+                      </div>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label>Stock Limit (Optional)</Label>
+                      <Input
+                        type="number"
+                        min="0"
+                        value={flashSaleStockLimit ?? ""}
+                        onChange={(e) => setFlashSaleStockLimit(e.target.value ? Number(e.target.value) : undefined)}
+                        placeholder="Leave empty for no limit"
+                      />
+                      <p className="text-xs text-muted-foreground">
+                        Maximum units available at flash sale price
+                      </p>
+                    </div>
+                  </>
                 )}
               </CardContent>
             </Card>

@@ -6,7 +6,8 @@ import { useCart } from "@/contexts/CartContext";
 import { getProductBySlug } from "@/data/mockDatabase";
 import { useToast } from "@/hooks/use-toast";
 import { useVariantPicker } from "@/hooks/useVariantPicker";
-import { ArrowLeft, Check, ShoppingCart, X } from "lucide-react";
+import { getFlashSalePrice, isFlashSaleActive } from "@/types/ecommerce";
+import { ArrowLeft, Check, ShoppingCart, X, Zap, Clock } from "lucide-react";
 import { Link, useParams } from "react-router-dom";
 
 export default function ProductDetailPage() {
@@ -24,9 +25,7 @@ export default function ProductDetailPage() {
   } = useVariantPicker(
     product?.variantMatrix || { axes: [] },
     product?.variants || []
-    );
-  
-  console.log(selection,selectedVariant,disabledOptions,isComplete)
+  );
 
   if (!product) {
     return (
@@ -47,26 +46,92 @@ export default function ProductDetailPage() {
       currency: "USD",
     }).format(price);
 
-  const handleAddToCart = () => {
-    if (!selectedVariant) return;
-    addToCart({
-      productId: product._id,
-      productName: product.name,
-      productImage: product.defaultImage,
-      variant: selectedVariant,
-      selection: { ...selection },
-    });
-    toast({
-      title: "Added to Cart",
-      description: `${product.name} (${Object.values(selection).join(", ")}) - ${formatPrice(selectedVariant.price)}`,
-    });
+  // Flash sale logic
+  const flashSaleActive = isFlashSaleActive(product.flashSale);
+  
+  // Determine if this is a simple product (no variants)
+  const isSimpleProduct = !product.hasVariants;
+
+  // Get the appropriate original price
+  const getOriginalPrice = (): number | null => {
+    if (isSimpleProduct) {
+      return product.basePrice ?? product.minPrice;
+    }
+    if (selectedVariant) {
+      return selectedVariant.price;
+    }
+    if (product.minPrice === product.maxPrice) {
+      return product.minPrice;
+    }
+    return null;
   };
 
-  const currentPrice = selectedVariant
-    ? selectedVariant.price
-    : product.minPrice === product.maxPrice
-    ? product.minPrice
-    : null;
+  const originalPrice = getOriginalPrice();
+  const flashPrice = flashSaleActive && originalPrice ? getFlashSalePrice(originalPrice, product.flashSale) : null;
+
+  // Stock info
+  const currentStock = isSimpleProduct 
+    ? (product.baseStock ?? 0) 
+    : (selectedVariant?.stock ?? null);
+  
+  const currentSku = isSimpleProduct 
+    ? product.baseSku 
+    : selectedVariant?.sku;
+
+  // Cart handling
+  const handleAddToCart = () => {
+    const priceToUse = flashPrice ?? originalPrice;
+    
+    if (isSimpleProduct) {
+      // Simple product - no variant selection needed
+      addToCart({
+        productId: product._id,
+        productName: product.name,
+        productImage: product.defaultImage,
+        variant: {
+          combo: {},
+          sku: product.baseSku || product._id,
+          price: priceToUse || product.basePrice || product.minPrice,
+          stock: product.baseStock || 0,
+          images: [],
+        },
+        selection: {},
+      });
+      toast({
+        title: "Added to Cart",
+        description: `${product.name} - ${formatPrice(priceToUse || product.basePrice || product.minPrice)}`,
+      });
+    } else if (selectedVariant) {
+      // Variant product
+      addToCart({
+        productId: product._id,
+        productName: product.name,
+        productImage: product.defaultImage,
+        variant: {
+          ...selectedVariant,
+          price: priceToUse || selectedVariant.price,
+        },
+        selection: { ...selection },
+      });
+      toast({
+        title: "Added to Cart",
+        description: `${product.name} (${Object.values(selection).join(", ")}) - ${formatPrice(priceToUse || selectedVariant.price)}`,
+      });
+    }
+  };
+
+  // Button state
+  const canAddToCart = isSimpleProduct 
+    ? (currentStock ?? 0) > 0
+    : isComplete && selectedVariant && selectedVariant.stock > 0;
+
+  const buttonText = isSimpleProduct
+    ? (currentStock ?? 0) > 0 ? "Add to Cart" : "Out of Stock"
+    : !isComplete
+    ? "Select Options"
+    : selectedVariant?.stock === 0
+    ? "Out of Stock"
+    : "Add to Cart";
 
   return (
     <div className="min-h-screen bg-background">
@@ -90,7 +155,18 @@ export default function ProductDetailPage() {
 
         <div className="grid gap-8 lg:grid-cols-2">
           {/* Image */}
-          <div className="aspect-square overflow-hidden rounded-xl bg-muted">
+          <div className="relative aspect-square overflow-hidden rounded-xl bg-muted">
+            {flashSaleActive && (
+              <div className="absolute top-4 left-4 z-10">
+                <Badge className="bg-yellow-500 hover:bg-yellow-600 text-yellow-950 gap-1 text-sm px-3 py-1">
+                  <Zap className="h-4 w-4" />
+                  {product.flashSale?.discountType === "percentage" 
+                    ? `${product.flashSale.discountValue}% OFF`
+                    : `$${product.flashSale?.discountValue} OFF`
+                  }
+                </Badge>
+              </div>
+            )}
             <img
               src={product.defaultImage}
               alt={product.name}
@@ -105,24 +181,36 @@ export default function ProductDetailPage() {
               <h1 className="mt-1 text-3xl font-bold">{product.name}</h1>
             </div>
 
-            <div className="flex items-center gap-4">
-              {currentPrice ? (
+            {/* Price Display */}
+            <div className="flex items-center gap-4 flex-wrap">
+              {flashSaleActive && flashPrice !== null && originalPrice ? (
+                <div className="flex items-center gap-3">
+                  <span className="text-3xl font-bold text-destructive">
+                    {formatPrice(flashPrice)}
+                  </span>
+                  <span className="text-xl text-muted-foreground line-through">
+                    {formatPrice(originalPrice)}
+                  </span>
+                </div>
+              ) : originalPrice !== null ? (
                 <span className="text-3xl font-bold text-primary">
-                  {formatPrice(currentPrice)}
+                  {formatPrice(originalPrice)}
                 </span>
               ) : (
                 <span className="text-2xl font-bold text-primary">
                   {formatPrice(product.minPrice)} - {formatPrice(product.maxPrice)}
                 </span>
               )}
-              {selectedVariant && (
+
+              {/* Stock Badge */}
+              {currentStock !== null && (
                 <Badge
-                  variant={selectedVariant.stock > 0 ? "default" : "destructive"}
+                  variant={currentStock > 0 ? "default" : "destructive"}
                 >
-                  {selectedVariant.stock > 0 ? (
+                  {currentStock > 0 ? (
                     <>
                       <Check className="mr-1 h-3 w-3" />
-                      In Stock ({selectedVariant.stock})
+                      In Stock ({currentStock})
                     </>
                   ) : (
                     <>
@@ -134,37 +222,50 @@ export default function ProductDetailPage() {
               )}
             </div>
 
+            {/* Flash Sale Timer Info */}
+            {flashSaleActive && product.flashSale && (
+              <div className="flex items-center gap-2 text-sm text-muted-foreground bg-yellow-500/10 rounded-lg p-3">
+                <Clock className="h-4 w-4 text-yellow-600" />
+                <span>
+                  Flash sale ends: {new Date(product.flashSale.endDate).toLocaleDateString()} at {new Date(product.flashSale.endDate).toLocaleTimeString()}
+                </span>
+                {product.flashSale.stockLimit && (
+                  <span className="ml-auto text-yellow-700 font-medium">
+                    {product.flashSale.stockLimit - (product.flashSale.soldCount ?? 0)} left at this price
+                  </span>
+                )}
+              </div>
+            )}
+
             <p className="text-muted-foreground">{product.description}</p>
 
             <Separator />
 
-            {/* Dynamic Variant Picker */}
-            <VariantPicker
-              matrix={product.variantMatrix}
-              variants={product.variants}
-              selection={selection}
-              disabledOptions={disabledOptions}
-              onSelect={setSelection}
-            />
+            {/* Variant Picker - Only for products with variants */}
+            {!isSimpleProduct && (
+              <VariantPicker
+                matrix={product.variantMatrix}
+                variants={product.variants}
+                selection={selection}
+                disabledOptions={disabledOptions}
+                onSelect={setSelection}
+              />
+            )}
 
-            {selectedVariant && (
+            {currentSku && (
               <p className="text-sm text-muted-foreground">
-                SKU: {selectedVariant.sku}
+                SKU: {currentSku}
               </p>
             )}
 
             <Button
               size="lg"
               className="w-full"
-              disabled={!isComplete || !selectedVariant || selectedVariant.stock === 0}
+              disabled={!canAddToCart}
               onClick={handleAddToCart}
             >
               <ShoppingCart className="mr-2 h-5 w-5" />
-              {!isComplete
-                ? "Select Options"
-                : selectedVariant?.stock === 0
-                ? "Out of Stock"
-                : "Add to Cart"}
+              {buttonText}
             </Button>
           </div>
         </div>
