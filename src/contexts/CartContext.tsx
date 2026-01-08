@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useCallback, type ReactNode } from "react";
-import type { ProductVariant } from "@/types/ecommerce";
+import type { ProductVariant, FlashSale } from "@/types/ecommerce";
+import { getFlashSalePrice, isFlashSaleActive } from "@/types/ecommerce";
 
 export interface CartItem {
   productId: string;
@@ -8,6 +9,7 @@ export interface CartItem {
   variant: ProductVariant;
   selection: Record<string, string>;
   quantity: number;
+  flashSale?: FlashSale;
 }
 
 interface CartContextType {
@@ -21,6 +23,15 @@ interface CartContextType {
 }
 
 const CartContext = createContext<CartContextType | undefined>(undefined);
+
+// Helper to get effective price considering flash sale
+const getEffectivePrice = (item: CartItem): number => {
+  if (item.flashSale && isFlashSaleActive(item.flashSale)) {
+    const flashPrice = getFlashSalePrice(item.variant.price, item.flashSale);
+    return flashPrice ?? item.variant.price;
+  }
+  return item.variant.price;
+};
 
 export function CartProvider({ children }: { children: ReactNode }) {
   const [items, setItems] = useState<CartItem[]>([]);
@@ -62,7 +73,12 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const clearCart = useCallback(() => setItems([]), []);
 
   const totalItems = items.reduce((sum, i) => sum + i.quantity, 0);
-  const totalPrice = items.reduce((sum, i) => sum + i.variant.price * i.quantity, 0);
+  
+  // Calculate total price with flash sale support
+  const totalPrice = items.reduce((sum, i) => {
+    const effectivePrice = getEffectivePrice(i);
+    return sum + effectivePrice * i.quantity;
+  }, 0);
 
   return (
     <CartContext.Provider
@@ -80,3 +96,6 @@ export function useCart() {
   }
   return context;
 }
+
+// Export helper for components to use
+export { getEffectivePrice };
