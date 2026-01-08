@@ -59,9 +59,8 @@ Agro Wares is intended to help farmers, suppliers, and buyers connect and manage
 
 Add screenshots or a GIF here:
 
-![screenshot](docs/screenshots/home.png)
 
-If you have a live demo, link it here: https://your-demo.example.com
+If you have a live demo, link it here: (https://ujjal-ecommerce-admin-vendor.netlify.app/)
 
 ---
 
