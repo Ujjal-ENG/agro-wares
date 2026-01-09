@@ -72,7 +72,7 @@ These instructions will get a copy of the project up and running on your local m
 
 - Git
 - Node >= X.X.X and npm/yarn (if Node.js)
-- Python >= X.X (if Django/Flask) and pip
+- React >= 18 and pnpm/yarn
 - Docker & Docker Compose (optional)
 - Database (Postgres/MySQL) — or use Docker
 
