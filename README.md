@@ -203,13 +203,9 @@ Add a CONTRIBUTING.md file with coding style, lint rules, and review process if 
 
 (Add or remove items based on your planning.)
 
-## License
-
-This project is licensed under the <LICENSE NAME> — see the [LICENSE](LICENSE) file for details.  
-(Replace with MIT/GPL/Apache or your chosen license.)
 
 ## Contact
 
 Maintainer: Ujjal-ENG  
-Email: your-email@example.com (optional)  
+Email: ujjalroy7862@gmail.com (optional) 
 Project Link: https://github.com/Ujjal-ENG/agro-wares
