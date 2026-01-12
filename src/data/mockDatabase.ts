@@ -8,6 +8,7 @@ import type {
   ProductDetailDTO,
   FacetedSearchResult,
   VariantMatrix,
+  AttributeTemplate,
 } from "@/types/ecommerce";
 
 // Vendor operations
@@ -62,12 +63,13 @@ export const getSubcategoryBySlug = (categorySlug: string, subSlug: string): Sub
 export const getSubcategoryById = (id: string): Subcategory | undefined => subcategories.find((s) => s._id === id);
 export const getAllSubcategories = (): Subcategory[] => subcategories;
 
-export const createSubcategory = (data: { categoryId: string; name: string; variantMatrix: VariantMatrix }): Subcategory => {
+export const createSubcategory = (data: { categoryId: string; name: string; attributeTemplates?: AttributeTemplate[]; variantMatrix: VariantMatrix }): Subcategory => {
   const newSubcategory: Subcategory = {
     _id: `sub${generateId()}`,
     categoryId: data.categoryId,
     name: data.name,
     slug: generateSlug(data.name),
+    attributeTemplates: data.attributeTemplates || [],
     variantMatrix: data.variantMatrix,
     createdAt: new Date(),
     updatedAt: new Date(),
@@ -76,13 +78,14 @@ export const createSubcategory = (data: { categoryId: string; name: string; vari
   return newSubcategory;
 };
 
-export const updateSubcategory = (id: string, data: Partial<Pick<Subcategory, "name" | "variantMatrix">>): Subcategory | undefined => {
+export const updateSubcategory = (id: string, data: Partial<Pick<Subcategory, "name" | "attributeTemplates" | "variantMatrix">>): Subcategory | undefined => {
   const index = subcategories.findIndex((s) => s._id === id);
   if (index === -1) return undefined;
   if (data.name) {
     subcategories[index].name = data.name;
     subcategories[index].slug = generateSlug(data.name);
   }
+  if (data.attributeTemplates) subcategories[index].attributeTemplates = data.attributeTemplates;
   if (data.variantMatrix) subcategories[index].variantMatrix = data.variantMatrix;
   subcategories[index].updatedAt = new Date();
   return subcategories[index];
@@ -133,6 +136,7 @@ export const getProductBySlug = (slug: string): ProductDetailDTO | undefined => 
     baseSku: product.baseSku,
     flashSale: product.flashSale,
     description: product.description,
+    attributes: product.attributes,
     variantMatrix: subcategory?.variantMatrix || { axes: [] },
     variants: product.variants,
   };

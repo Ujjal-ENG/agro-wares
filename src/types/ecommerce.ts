@@ -19,6 +19,40 @@ export interface Category {
   updatedAt: Date;
 }
 
+// ==========================================
+// ATTRIBUTES SYSTEM
+// ==========================================
+
+/**
+ * Attribute Template - Defines what attributes a subcategory requires
+ * These are the "specification fields" vendors must fill out
+ */
+export interface AttributeTemplate {
+  key: string;           // e.g., "brand", "screen_size"
+  label: string;         // e.g., "Brand", "Screen Size"
+  type: "text" | "number" | "select";  // Input type
+  options?: string[];    // For select type - predefined options
+  required: boolean;
+  unit?: string;         // e.g., "inches", "mAh", "GB"
+}
+
+/**
+ * Product Attribute - Actual attribute value on a product
+ * Answers: "What are its features?"
+ */
+export interface ProductAttribute {
+  key: string;           // Matches AttributeTemplate.key
+  value: string;         // The actual value
+}
+
+// ==========================================
+// VARIANTS SYSTEM
+// ==========================================
+
+/**
+ * Variant Axis - Defines variant-generating attributes
+ * These create purchasable SKUs (Color, Size, Storage)
+ */
 export interface VariantAxis {
   key: string;
   label: string;
@@ -34,7 +68,8 @@ export interface Subcategory {
   categoryId: string;
   name: string;
   slug: string;
-  variantMatrix: VariantMatrix;
+  attributeTemplates: AttributeTemplate[];  // Specs to collect
+  variantMatrix: VariantMatrix;             // Variant-generating attributes
   createdAt: Date;
   updatedAt: Date;
 }
@@ -79,17 +114,29 @@ export interface Product {
   description: string;
   seo: ProductSEO;
   defaultImage: string;
+  
+  // Product Attributes (Specifications)
+  attributes: ProductAttribute[];
+  
+  // Variant vs Simple Product
   hasVariants: boolean;
-  basePrice?: number;
-  baseStock?: number;
-  baseSku?: string;
+  basePrice?: number;      // For simple products (no variants)
+  baseStock?: number;      // For simple products
+  baseSku?: string;        // For simple products
+  
+  // Computed pricing fields
   minPrice: number;
   maxPrice: number;
   totalStock: number;
   inStock: boolean;
+  
+  // Variants (for products with variants)
   variants: ProductVariant[];
   variantValues: Record<string, string[]>;
+  
+  // Flash Sale
   flashSale?: FlashSale;
+  
   createdAt: Date;
   updatedAt: Date;
 }
@@ -110,6 +157,7 @@ export interface ProductCardDTO {
 
 export interface ProductDetailDTO extends ProductCardDTO {
   description: string;
+  attributes: ProductAttribute[];
   variantMatrix: VariantMatrix;
   variants: ProductVariant[];
   baseStock?: number;

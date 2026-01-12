@@ -59,13 +59,24 @@ export let categories: Category[] = [
   },
 ];
 
-// Mock Subcategories with Variant Matrices
+// Mock Subcategories with Attribute Templates and Variant Matrices
 export let subcategories: Subcategory[] = [
   {
     _id: "sub1",
     categoryId: "cat1",
     name: "Smartphones",
     slug: "smartphones",
+    // Attribute Templates - Specifications that vendors must fill out
+    attributeTemplates: [
+      { key: "brand", label: "Brand", type: "select", options: ["Apple", "Samsung", "Google", "OnePlus", "Xiaomi"], required: true },
+      { key: "model", label: "Model", type: "text", required: true },
+      { key: "operating_system", label: "Operating System", type: "select", options: ["iOS", "Android"], required: true },
+      { key: "screen_size", label: "Screen Size", type: "number", unit: "inches", required: true },
+      { key: "camera", label: "Camera (Rear)", type: "text", required: false },
+      { key: "battery", label: "Battery Capacity", type: "number", unit: "mAh", required: false },
+      { key: "network", label: "Network", type: "select", options: ["4G", "5G"], required: true },
+    ],
+    // Variant Matrix - Creates purchasable SKUs
     variantMatrix: {
       axes: [
         { key: "storage", label: "Storage", values: ["64GB", "128GB", "256GB", "512GB"] },
@@ -80,6 +91,14 @@ export let subcategories: Subcategory[] = [
     categoryId: "cat1",
     name: "Laptops",
     slug: "laptops",
+    attributeTemplates: [
+      { key: "brand", label: "Brand", type: "select", options: ["Apple", "Dell", "HP", "Lenovo", "ASUS"], required: true },
+      { key: "model", label: "Model", type: "text", required: true },
+      { key: "processor", label: "Processor", type: "text", required: true },
+      { key: "screen_size", label: "Screen Size", type: "number", unit: "inches", required: true },
+      { key: "graphics", label: "Graphics Card", type: "text", required: false },
+      { key: "weight", label: "Weight", type: "number", unit: "kg", required: false },
+    ],
     variantMatrix: {
       axes: [
         { key: "ram", label: "RAM", values: ["8GB", "16GB", "32GB"] },
@@ -94,6 +113,12 @@ export let subcategories: Subcategory[] = [
     categoryId: "cat2",
     name: "T-Shirts",
     slug: "t-shirts",
+    attributeTemplates: [
+      { key: "brand", label: "Brand", type: "text", required: true },
+      { key: "material", label: "Material", type: "select", options: ["100% Cotton", "Cotton Blend", "Polyester", "Linen"], required: true },
+      { key: "fit", label: "Fit", type: "select", options: ["Regular", "Slim", "Relaxed", "Oversized"], required: true },
+      { key: "care", label: "Care Instructions", type: "text", required: false },
+    ],
     variantMatrix: {
       axes: [
         { key: "size", label: "Size", values: ["XS", "S", "M", "L", "XL", "XXL"] },
@@ -108,6 +133,12 @@ export let subcategories: Subcategory[] = [
     categoryId: "cat2",
     name: "Jeans",
     slug: "jeans",
+    attributeTemplates: [
+      { key: "brand", label: "Brand", type: "text", required: true },
+      { key: "style", label: "Style", type: "select", options: ["Slim Fit", "Regular Fit", "Skinny", "Bootcut", "Straight"], required: true },
+      { key: "material", label: "Material", type: "text", required: true },
+      { key: "stretch", label: "Stretch", type: "select", options: ["No Stretch", "Light Stretch", "Medium Stretch", "Super Stretch"], required: false },
+    ],
     variantMatrix: {
       axes: [
         { key: "waist", label: "Waist", values: ["28", "30", "32", "34", "36", "38"] },
@@ -123,6 +154,13 @@ export let subcategories: Subcategory[] = [
     categoryId: "cat3",
     name: "Furniture",
     slug: "furniture",
+    attributeTemplates: [
+      { key: "brand", label: "Brand", type: "text", required: false },
+      { key: "type", label: "Furniture Type", type: "select", options: ["Table", "Chair", "Sofa", "Shelf", "Desk"], required: true },
+      { key: "dimensions", label: "Dimensions (LxWxH)", type: "text", required: true },
+      { key: "weight_capacity", label: "Weight Capacity", type: "number", unit: "kg", required: false },
+      { key: "assembly", label: "Assembly Required", type: "select", options: ["Yes", "No"], required: true },
+    ],
     variantMatrix: {
       axes: [
         { key: "material", label: "Material", values: ["Oak", "Walnut", "Pine", "Metal"] },
@@ -134,9 +172,9 @@ export let subcategories: Subcategory[] = [
   },
 ];
 
-// Mock Products with Variants and Flash Sales
+// Mock Products with Attributes and Variants
 export let products: Product[] = [
-  // Product WITH variants and flash sale
+  // Product WITH variants and flash sale - Smartphone
   {
     _id: "p1",
     vendorId: "v1",
@@ -151,6 +189,16 @@ export let products: Product[] = [
       keywords: ["smartphone", "galaxy", "android"],
     },
     defaultImage: "https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?w=400",
+    // Product Attributes (Specifications)
+    attributes: [
+      { key: "brand", value: "Samsung" },
+      { key: "model", value: "Galaxy Pro Max 2024" },
+      { key: "operating_system", value: "Android" },
+      { key: "screen_size", value: "6.7" },
+      { key: "camera", value: "108MP + 12MP + 12MP" },
+      { key: "battery", value: "5000" },
+      { key: "network", value: "5G" },
+    ],
     hasVariants: true,
     minPrice: 799,
     maxPrice: 1199,
@@ -181,7 +229,7 @@ export let products: Product[] = [
     createdAt: new Date("2024-06-01"),
     updatedAt: new Date("2024-06-01"),
   },
-  // Product WITH variants, no flash sale
+  // Product WITH variants, no flash sale - Laptop
   {
     _id: "p2",
     vendorId: "v1",
@@ -196,6 +244,14 @@ export let products: Product[] = [
       keywords: ["laptop", "professional", "ultrabook"],
     },
     defaultImage: "https://images.unsplash.com/photo-1496181133206-80ce9b88a853?w=400",
+    attributes: [
+      { key: "brand", value: "Dell" },
+      { key: "model", value: "ProBook Elite 15" },
+      { key: "processor", value: "Intel Core i7-13700H" },
+      { key: "screen_size", value: "15.6" },
+      { key: "graphics", value: "NVIDIA RTX 4060" },
+      { key: "weight", value: "1.8" },
+    ],
     hasVariants: true,
     minPrice: 1299,
     maxPrice: 2199,
@@ -214,7 +270,7 @@ export let products: Product[] = [
     createdAt: new Date("2024-05-15"),
     updatedAt: new Date("2024-05-15"),
   },
-  // Product WITH variants
+  // Product WITH variants - T-Shirt
   {
     _id: "p3",
     vendorId: "v2",
@@ -229,6 +285,12 @@ export let products: Product[] = [
       keywords: ["t-shirt", "cotton", "casual"],
     },
     defaultImage: "https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=400",
+    attributes: [
+      { key: "brand", value: "Fashion Forward" },
+      { key: "material", value: "100% Cotton" },
+      { key: "fit", value: "Relaxed" },
+      { key: "care", value: "Machine wash cold, tumble dry low" },
+    ],
     hasVariants: true,
     minPrice: 24.99,
     maxPrice: 29.99,
@@ -251,7 +313,7 @@ export let products: Product[] = [
     createdAt: new Date("2024-04-01"),
     updatedAt: new Date("2024-04-01"),
   },
-  // Product WITH variants
+  // Product WITH variants - Jeans
   {
     _id: "p4",
     vendorId: "v2",
@@ -266,6 +328,12 @@ export let products: Product[] = [
       keywords: ["jeans", "denim", "slim fit"],
     },
     defaultImage: "https://images.unsplash.com/photo-1542272604-787c3835535d?w=400",
+    attributes: [
+      { key: "brand", value: "Fashion Forward" },
+      { key: "style", value: "Slim Fit" },
+      { key: "material", value: "98% Cotton, 2% Elastane" },
+      { key: "stretch", value: "Medium Stretch" },
+    ],
     hasVariants: true,
     minPrice: 79.99,
     maxPrice: 89.99,
@@ -286,7 +354,7 @@ export let products: Product[] = [
     createdAt: new Date("2024-03-20"),
     updatedAt: new Date("2024-03-20"),
   },
-  // Product WITH variants
+  // Product WITH variants - Furniture
   {
     _id: "p5",
     vendorId: "v3",
@@ -301,6 +369,13 @@ export let products: Product[] = [
       keywords: ["furniture", "coffee table", "modern"],
     },
     defaultImage: "https://images.unsplash.com/photo-1533090481720-856c6e3c1fdc?w=400",
+    attributes: [
+      { key: "brand", value: "Home Essentials" },
+      { key: "type", value: "Table" },
+      { key: "dimensions", value: "120cm x 60cm x 45cm" },
+      { key: "weight_capacity", value: "50" },
+      { key: "assembly", value: "Yes" },
+    ],
     hasVariants: true,
     minPrice: 299,
     maxPrice: 499,
@@ -335,6 +410,12 @@ export let products: Product[] = [
       keywords: ["usb-c", "hub", "adapter", "laptop accessory"],
     },
     defaultImage: "https://images.unsplash.com/photo-1625723044792-44de16ccb4e8?w=400",
+    attributes: [
+      { key: "brand", value: "TechGear Pro" },
+      { key: "model", value: "Hub Pro 7" },
+      { key: "processor", value: "N/A" },
+      { key: "screen_size", value: "N/A" },
+    ],
     hasVariants: false,
     basePrice: 49.99,
     baseStock: 200,
@@ -372,6 +453,12 @@ export let products: Product[] = [
       keywords: ["lamp", "desk lamp", "LED", "modern"],
     },
     defaultImage: "https://images.unsplash.com/photo-1507473885765-e6ed057f782c?w=400",
+    attributes: [
+      { key: "brand", value: "Home Essentials" },
+      { key: "type", value: "Desk" },
+      { key: "dimensions", value: "40cm x 15cm x 15cm" },
+      { key: "assembly", value: "No" },
+    ],
     hasVariants: false,
     basePrice: 79.99,
     baseStock: 75,
