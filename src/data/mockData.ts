@@ -170,6 +170,26 @@ export let subcategories: Subcategory[] = [
     createdAt: new Date("2024-01-01"),
     updatedAt: new Date("2024-01-01"),
   },
+  // Subcategory WITHOUT variants - Simple products only
+  {
+    _id: "sub6",
+    categoryId: "cat1",
+    name: "E-Books & Digital",
+    slug: "ebooks-digital",
+    attributeTemplates: [
+      { key: "author", label: "Author", type: "text", required: true },
+      { key: "publisher", label: "Publisher", type: "text", required: true },
+      { key: "format", label: "Format", type: "select", options: ["PDF", "EPUB", "MOBI"], required: true },
+      { key: "pages", label: "Pages", type: "number", required: false },
+      { key: "language", label: "Language", type: "select", options: ["English", "Spanish", "French", "German"], required: true },
+    ],
+    // No variantMatrix - this subcategory only allows simple products
+    variantMatrix: {
+      axes: [],
+    },
+    createdAt: new Date("2024-01-01"),
+    updatedAt: new Date("2024-01-01"),
+  },
 ];
 
 // Mock Products with Attributes and Variants
@@ -471,6 +491,41 @@ export let products: Product[] = [
     variantValues: {},
     createdAt: new Date("2024-06-15"),
     updatedAt: new Date("2024-06-15"),
+  },
+  // Product WITHOUT variants - E-Book (in subcategory with no variant matrix)
+  {
+    _id: "p8",
+    vendorId: "v1",
+    categoryId: "cat1",
+    subcategoryId: "sub6",
+    name: "Learn TypeScript - Complete Guide",
+    slug: "learn-typescript-complete-guide",
+    description: "Comprehensive e-book covering TypeScript from basics to advanced patterns. Perfect for JavaScript developers looking to level up.",
+    seo: {
+      title: "Learn TypeScript - Complete Guide E-Book",
+      description: "Master TypeScript with this comprehensive guide",
+      keywords: ["typescript", "ebook", "programming", "javascript"],
+    },
+    defaultImage: "https://images.unsplash.com/photo-1532012197267-da84d127e765?w=400",
+    attributes: [
+      { key: "author", value: "John Developer" },
+      { key: "publisher", value: "TechGear Publications" },
+      { key: "format", value: "PDF" },
+      { key: "pages", value: "450" },
+      { key: "language", value: "English" },
+    ],
+    hasVariants: false,
+    basePrice: 29.99,
+    baseStock: 999,
+    baseSku: "EBOOK-TS-001",
+    minPrice: 29.99,
+    maxPrice: 29.99,
+    totalStock: 999,
+    inStock: true,
+    variants: [],
+    variantValues: {},
+    createdAt: new Date("2024-08-01"),
+    updatedAt: new Date("2024-08-01"),
   },
 ];
 
