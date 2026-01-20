@@ -1,11 +1,12 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { Plus, Edit, Trash2, ChevronRight, X, Save } from "lucide-react";
+import { Plus, Edit, Trash2, ChevronRight, X, Save, FileText } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Dialog,
   DialogContent,
@@ -33,7 +34,7 @@ import {
   updateSubcategory,
   deleteSubcategory,
 } from "@/data/mockDatabase";
-import type { Category, Subcategory, VariantAxis } from "@/types/ecommerce";
+import type { Category, Subcategory, VariantAxis, AttributeTemplate } from "@/types/ecommerce";
 
 export default function AdminPanel() {
   const { toast } = useToast();
@@ -92,6 +93,7 @@ export default function AdminPanel() {
   const [subcategoryName, setSubcategoryName] = useState("");
   const [subcategoryCategoryId, setSubcategoryCategoryId] = useState("");
   const [variantAxes, setVariantAxes] = useState<VariantAxis[]>([]);
+  const [attributeTemplates, setAttributeTemplates] = useState<AttributeTemplate[]>([]);
 
   const openSubcategoryModal = (sub?: Subcategory) => {
     if (sub) {
@@ -99,11 +101,13 @@ export default function AdminPanel() {
       setSubcategoryName(sub.name);
       setSubcategoryCategoryId(sub.categoryId);
       setVariantAxes([...sub.variantMatrix.axes]);
+      setAttributeTemplates([...(sub.attributeTemplates || [])]);
     } else {
       setEditingSubcategory(null);
       setSubcategoryName("");
       setSubcategoryCategoryId(categories[0]?._id || "");
       setVariantAxes([]);
+      setAttributeTemplates([]);
     }
     setSubcategoryModalOpen(true);
   };
@@ -129,17 +133,56 @@ export default function AdminPanel() {
     setVariantAxes(variantAxes.filter((_, i) => i !== index));
   };
 
+  // Attribute Template functions
+  const addAttributeTemplate = () => {
+    setAttributeTemplates([
+      ...attributeTemplates,
+      { key: "", label: "", type: "text", required: false },
+    ]);
+  };
+
+  const updateAttributeTemplate = (
+    index: number,
+    field: keyof AttributeTemplate,
+    value: string | boolean | string[]
+  ) => {
+    const updated = [...attributeTemplates];
+    if (field === "options") {
+      updated[index].options = value as string[];
+    } else if (field === "required") {
+      updated[index].required = value as boolean;
+    } else if (field === "type") {
+      updated[index].type = value as "text" | "number" | "select";
+      // Clear options if not select type
+      if (value !== "select") {
+        updated[index].options = undefined;
+      }
+    } else {
+      (updated[index] as any)[field] = value;
+      if (field === "label" && !updated[index].key) {
+        updated[index].key = (value as string).toLowerCase().replace(/\s+/g, "_");
+      }
+    }
+    setAttributeTemplates(updated);
+  };
+
+  const removeAttributeTemplate = (index: number) => {
+    setAttributeTemplates(attributeTemplates.filter((_, i) => i !== index));
+  };
+
   const saveSubcategory = () => {
     if (!subcategoryName || !subcategoryCategoryId) {
       toast({ title: "Name and category are required", variant: "destructive" });
       return;
     }
     const validAxes = variantAxes.filter((a) => a.key && a.label && a.values.length > 0);
+    const validAttributes = attributeTemplates.filter((a) => a.key && a.label);
     
     if (editingSubcategory) {
       updateSubcategory(editingSubcategory._id, {
         name: subcategoryName,
         variantMatrix: { axes: validAxes },
+        attributeTemplates: validAttributes,
       });
       toast({ title: "Subcategory Updated" });
     } else {
@@ -147,6 +190,7 @@ export default function AdminPanel() {
         categoryId: subcategoryCategoryId,
         name: subcategoryName,
         variantMatrix: { axes: validAxes },
+        attributeTemplates: validAttributes,
       });
       toast({ title: "Subcategory Created" });
     }
@@ -293,17 +337,43 @@ export default function AdminPanel() {
                               </Button>
                             </div>
                           </div>
-                          <div className="flex flex-wrap gap-2">
-                            {sub.variantMatrix.axes.map((axis) => (
-                              <Badge key={axis.key} variant="secondary">
-                                {axis.label}: {axis.values.join(", ")}
-                              </Badge>
-                            ))}
-                            {sub.variantMatrix.axes.length === 0 && (
-                              <span className="text-sm text-muted-foreground">
-                                No variants defined
-                              </span>
-                            )}
+                          {/* Variant Axes */}
+                          <div className="space-y-2">
+                            <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Variants</span>
+                            <div className="flex flex-wrap gap-2">
+                              {sub.variantMatrix.axes.map((axis) => (
+                                <Badge key={axis.key} variant="secondary">
+                                  {axis.label}: {axis.values.join(", ")}
+                                </Badge>
+                              ))}
+                              {sub.variantMatrix.axes.length === 0 && (
+                                <span className="text-sm text-muted-foreground italic">
+                                  No variants (simple products only)
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                          
+                          {/* Attribute Templates */}
+                          <div className="space-y-2">
+                            <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide flex items-center gap-1">
+                              <FileText className="h-3 w-3" />
+                              Product Specifications
+                            </span>
+                            <div className="flex flex-wrap gap-2">
+                              {sub.attributeTemplates?.map((attr) => (
+                                <Badge key={attr.key} variant="outline" className="text-xs">
+                                  {attr.label}
+                                  {attr.required && <span className="text-destructive ml-1">*</span>}
+                                  <span className="text-muted-foreground ml-1">({attr.type})</span>
+                                </Badge>
+                              ))}
+                              {(!sub.attributeTemplates || sub.attributeTemplates.length === 0) && (
+                                <span className="text-sm text-muted-foreground italic">
+                                  No specifications defined
+                                </span>
+                              )}
+                            </div>
                           </div>
                         </div>
                       ))}
@@ -461,6 +531,113 @@ export default function AdminPanel() {
                         <p className="text-xs text-muted-foreground">
                           Enter values separated by commas: Red, Blue, Green
                         </p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Attribute Templates (Product Specifications) */}
+            <div className="space-y-4 border-t pt-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <Label className="text-base font-semibold flex items-center gap-2">
+                    <FileText className="h-4 w-4" />
+                    Product Specifications (Attributes)
+                  </Label>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    Define the specification fields vendors must fill when adding products.
+                  </p>
+                </div>
+                <Button type="button" size="sm" variant="outline" onClick={addAttributeTemplate}>
+                  <Plus className="mr-2 h-4 w-4" />
+                  Add Attribute
+                </Button>
+              </div>
+
+              {attributeTemplates.length === 0 ? (
+                <p className="text-center py-4 text-muted-foreground border rounded-lg">
+                  No attributes defined. Vendors won't see specification fields.
+                </p>
+              ) : (
+                <div className="space-y-4">
+                  {attributeTemplates.map((attr, idx) => (
+                    <div key={idx} className="rounded-lg border p-4 space-y-3 bg-muted/30">
+                      <div className="flex items-center justify-between">
+                        <span className="font-medium">Attribute {idx + 1}</span>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => removeAttributeTemplate(idx)}
+                        >
+                          <X className="h-4 w-4" />
+                        </Button>
+                      </div>
+                      <div className="grid gap-4 sm:grid-cols-3">
+                        <div className="space-y-2">
+                          <Label>Label</Label>
+                          <Input
+                            value={attr.label}
+                            onChange={(e) => updateAttributeTemplate(idx, "label", e.target.value)}
+                            placeholder="e.g., Brand"
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label>Key</Label>
+                          <Input
+                            value={attr.key}
+                            onChange={(e) => updateAttributeTemplate(idx, "key", e.target.value)}
+                            placeholder="e.g., brand"
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label>Type</Label>
+                          <Select
+                            value={attr.type}
+                            onValueChange={(v) => updateAttributeTemplate(idx, "type", v)}
+                          >
+                            <SelectTrigger>
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="text">Text</SelectItem>
+                              <SelectItem value="number">Number</SelectItem>
+                              <SelectItem value="select">Select (Dropdown)</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </div>
+                      
+                      {attr.type === "select" && (
+                        <div className="space-y-2">
+                          <Label>Options (comma separated)</Label>
+                          <Input
+                            value={attr.options?.join(", ") || ""}
+                            onChange={(e) => {
+                              const values = e.target.value
+                                .split(",")
+                                .map((v) => v.trim())
+                                .filter((v) => v.length > 0);
+                              updateAttributeTemplate(idx, "options", values);
+                            }}
+                            placeholder="e.g., Apple, Samsung, Google"
+                          />
+                        </div>
+                      )}
+                      
+                      <div className="flex items-center gap-2">
+                        <Checkbox
+                          id={`required-${idx}`}
+                          checked={attr.required}
+                          onCheckedChange={(checked) =>
+                            updateAttributeTemplate(idx, "required", !!checked)
+                          }
+                        />
+                        <Label htmlFor={`required-${idx}`} className="cursor-pointer text-sm">
+                          Required field
+                        </Label>
                       </div>
                     </div>
                   ))}
