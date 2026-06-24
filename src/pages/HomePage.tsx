@@ -52,6 +52,9 @@ export default function HomePage() {
             <Link to="/vendor" className="text-sm hover:text-primary">
               Vendor Dashboard
             </Link>
+            <Link to="/admin/access" className="text-sm hover:text-primary">
+              Admin Access Control
+            </Link>
           </nav>
         </div>
       </header>
