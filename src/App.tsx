@@ -12,6 +12,7 @@ import VendorDashboard from "./pages/VendorDashboard";
 import VendorAddProduct from "./pages/VendorAddProduct";
 import VendorEditProduct from "./pages/VendorEditProduct";
 import AdminPanel from "./pages/AdminPanel";
+import AccessControl from "./pages/AccessControl";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -33,6 +34,7 @@ const App = () => (
             <Route path="/vendor/add-product" element={<VendorAddProduct />} />
             <Route path="/vendor/edit-product/:slug" element={<VendorEditProduct />} />
             <Route path="/admin" element={<AdminPanel />} />
+            <Route path="/admin/access" element={<AccessControl />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>
