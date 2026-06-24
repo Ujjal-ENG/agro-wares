@@ -214,6 +214,9 @@ export default function AdminPanel() {
             MultiMart Admin
           </Link>
           <div className="flex items-center gap-4">
+            <Link to="/admin/access">
+              <Button variant="outline" size="sm">Access Control</Button>
+            </Link>
             <Link to="/vendor">
               <Button variant="outline" size="sm">
                 Vendor Dashboard
